@@ -147,4 +147,42 @@ describe('progress', () => {
       oh.mockRestore();
     }
   });
+
+  it('ticks toward a moving goal one stroke at a time, turning round without redrawing', async () => {
+    const ow = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(300);
+    const oh = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(26);
+    const speed = settings.speed;
+    settings.speed = 40; // real animation, just fast
+    try {
+      let set!: (v: number) => void;
+      function Bar() { const [v, setV] = useState(0.2); set = setV; return <InkProgress value={v} label="Upload" />; }
+      render(<InkProvider><Bar /></InkProvider>);
+      const bar = screen.getByRole('progressbar');
+      const fill = () => [...bar.querySelectorAll('.ink-l-fill .ink-stroke')].filter((n) => (n as SVGElement).style.opacity !== '0');
+      await waitFor(() => expect(fill().length).toBeGreaterThan(0), { timeout: 3000 });
+      await new Promise((r) => setTimeout(r, 300));
+      const at20 = fill();
+
+      act(() => set(0.9));
+      // Part-way up, aim lower: it should stop adding and start taking off.
+      // Wait until it's well past the halfway mark (~3× the 20% fill), then aim for 50%.
+      await waitFor(() => expect(fill().length).toBeGreaterThan(at20.length * 3), { timeout: 3000 });
+      const peak = fill().length;
+      act(() => set(0.5));
+      let last = -1, stable = 0;
+      await waitFor(() => { const n = fill().length; stable = n === last ? stable + 1 : 0; last = n; expect(stable).toBeGreaterThan(5); }, { timeout: 5000, interval: 60 });
+      const at50 = fill();
+      expect(at50.length).toBeGreaterThan(at20.length);
+      expect(at50.length).toBeLessThan(peak); // it turned round and took strokes off
+      expect(at20.every((node, i) => at50[i] === node)).toBe(true); // the original fill was never redrawn
+
+      act(() => set(0.5)); // no change in goal: nothing happens
+      await new Promise((r) => setTimeout(r, 200));
+      expect(fill()).toEqual(at50);
+    } finally {
+      settings.speed = speed;
+      ow.mockRestore();
+      oh.mockRestore();
+    }
+  });
 });
