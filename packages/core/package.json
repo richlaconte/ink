@@ -1,0 +1,42 @@
+{
+  "name": "@pen-ink/core",
+  "version": "0.1.0",
+  "description": "Framework-free engine for interfaces drawn in real time in pen and ink: nib-modelled strokes, hand-drawn shapes, single-line handwriting, page turns.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "styles.css"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "pen",
+    "ink",
+    "hand-drawn",
+    "sketch",
+    "svg",
+    "handwriting",
+    "animation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/richlaconte/ink.git",
+    "directory": "packages/core"
+  }
+}

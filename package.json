@@ -1,0 +1,28 @@
+{
+  "name": "pen-ink-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter \"./packages/**\" build",
+    "test": "pnpm -r --filter \"./packages/**\" test",
+    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm --filter demo dev"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "devDependencies": {
+    "@testing-library/react": "16",
+    "@types/react": "19",
+    "@types/react-dom": "19",
+    "@vitejs/plugin-react": "4",
+    "jsdom": "26",
+    "react": "19",
+    "react-dom": "19",
+    "tsup": "8",
+    "typescript": "5",
+    "vite": "6",
+    "vitest": "3"
+  }
+}

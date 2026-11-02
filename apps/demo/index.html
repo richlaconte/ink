@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pen-ink</title>
+  <!-- Blank paper until React mounts, so nothing shows before it's drawn (see InkHeadScript for SSR apps). -->
+  <script>(function (d) { try { var t = localStorage.getItem('ink-theme'); if (t) d.dataset.inkTheme = t; } catch (e) {} d.classList.add('ink-pending'); setTimeout(function () { d.classList.remove('ink-pending'); }, 3000); })(document.documentElement);</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+</head>
+<body class="ink-paper">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

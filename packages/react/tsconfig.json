@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "paths": { "@pen-ink/core": ["../core/src/index.ts"], "@pen-ink/fonts": ["../fonts/src/index.ts"] } },
+  "include": ["src", "test"]
+}

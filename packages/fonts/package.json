@@ -1,0 +1,20 @@
+{
+  "name": "@pen-ink/fonts",
+  "version": "0.1.0",
+  "description": "Single-line (plotter) handwriting fonts for pen-ink, with matching metrics webfonts.",
+  "license": "(OFL-1.1 AND LicenseRef-Hershey)",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+  },
+  "files": ["dist", "licenses", "README.md"],
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "build": "node scripts/generate.mjs && tsup",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "echo 'no tests'"
+  },
+  "keywords": ["font", "handwriting", "single-line", "hershey", "plotter"],
+  "repository": { "type": "git", "url": "git+https://github.com/richlaconte/ink.git", "directory": "packages/fonts" }
+}

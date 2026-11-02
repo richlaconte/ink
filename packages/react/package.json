@@ -1,0 +1,51 @@
+{
+  "name": "@pen-ink/react",
+  "version": "0.1.0",
+  "description": "React components drawn in real time in pen and ink: buttons, cards, inputs that write as you type, handwriting, page turns.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "styles.css"
+  ],
+  "scripts": {
+    "build": "tsup && cp ../core/styles.css styles.css",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@pen-ink/core": "workspace:*",
+    "@pen-ink/fonts": "workspace:*"
+  },
+  "keywords": [
+    "react",
+    "components",
+    "hand-drawn",
+    "sketch",
+    "pen",
+    "ink",
+    "handwriting",
+    "ui"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/richlaconte/ink.git",
+    "directory": "packages/react"
+  }
+}

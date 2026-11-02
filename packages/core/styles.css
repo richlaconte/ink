@@ -1,0 +1,114 @@
+/* pen-ink — base styles. Opt-in: nothing here styles your page until you use the classes.
+   Theme with the --ink-* custom properties. Dark mode follows the system unless
+   [data-ink-theme="light" | "dark"] is set on an ancestor (usually <html>). */
+
+:root {
+  --ink-paper: #f3eee2;
+  --ink-paper-deep: #e9e1cf;
+  --ink-color: #1d1b22;
+  --ink-wet: #1f2e66;          /* iron-gall: writes blue, dries near-black */
+  --ink-soft: #57505e;
+  --ink-faint: #8d8578;
+  --ink-accent: #b5402c;
+  --ink-accent-wet: #d9472a;
+  --ink-highlighter: #f4d35e;
+  --ink-rule: rgba(53, 79, 140, 0.13);
+  --ink-paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.28  0 0 0 0 0.18  0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --ink-paper-fibre: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.06' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.32  0 0 0 0 0.2  0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-ink-theme="light"]) {
+    --ink-paper: #17161b; --ink-paper-deep: #201e25; --ink-color: #ece5d6; --ink-wet: #ffffff;
+    --ink-soft: #b9b0a3; --ink-faint: #7d766c; --ink-accent: #ff8a65; --ink-accent-wet: #ffb199;
+    --ink-highlighter: #8a6f12; --ink-rule: rgba(160, 180, 255, 0.08);
+  }
+}
+[data-ink-theme="dark"] {
+  --ink-paper: #17161b; --ink-paper-deep: #201e25; --ink-color: #ece5d6; --ink-wet: #ffffff;
+  --ink-soft: #b9b0a3; --ink-faint: #7d766c; --ink-accent: #ff8a65; --ink-accent-wet: #ffb199;
+  --ink-highlighter: #8a6f12; --ink-rule: rgba(160, 180, 255, 0.08);
+}
+
+/* Paper: put on <body> (or any surface). */
+.ink-paper { background-color: var(--ink-paper); background-image: var(--ink-paper-grain), var(--ink-paper-fibre); color: var(--ink-color); }
+
+/* ---------- strokes ---------- */
+.ink-stroke { fill: var(--ink-color); transition: fill 1.6s ease-out; }
+.ink-stroke.wet { fill: var(--ink-wet); transition: none; }
+.ink-accent .ink-stroke, .ink-stroke.ink-accent { fill: var(--ink-accent); }
+.ink-accent .ink-stroke.wet, .ink-stroke.ink-accent.wet { fill: var(--ink-accent-wet); }
+.ink-highlighter { mix-blend-mode: multiply; }
+.ink-highlighter .ink-stroke { fill: var(--ink-highlighter); opacity: 0.75; transition: none; }
+[data-ink-theme="dark"] .ink-highlighter { mix-blend-mode: screen; }
+@media (prefers-color-scheme: dark) { :root:not([data-ink-theme="light"]) .ink-highlighter { mix-blend-mode: screen; } }
+.ink-marker .ink-stroke { transition: none; }
+
+/* The ink filter. Turn it off per subtree with .ink-no-filter. */
+.ink-svg, .ink-layer, .ink-text-svg { filter: url(#ink); }
+.ink-no-filter .ink-svg, .ink-no-filter .ink-layer, .ink-no-filter .ink-text-svg { filter: none; }
+
+/* ---------- hosts: an element with an ink layer behind its content ---------- */
+.ink-host { position: relative; isolation: isolate; }
+.ink-layer { position: absolute; inset: -18px; width: calc(100% + 36px); height: calc(100% + 36px); overflow: visible; pointer-events: none; z-index: -1; }
+.ink-text-svg { overflow: visible; display: block; max-width: 100%; height: auto; }
+.ink-sr { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Write-in: words revealed left to right. */
+.ink-w { clip-path: inset(-0.4em 100% -0.4em -0.15em); }
+.ink-w[data-on] { clip-path: inset(-0.4em -0.4em -0.4em -0.15em); }
+.ink-wipe { visibility: hidden; }
+.ink-wipe[data-on] { visibility: visible; animation: ink-wipe var(--ink-wipe, 300ms) ease-out both; }
+@keyframes ink-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+/* Hide-until-drawn before hydration: <InkHeadScript /> adds .ink-pending to <html>. */
+.ink-pending body { visibility: hidden; }
+
+/* ---------- components ---------- */
+.ink-button {
+  appearance: none; border: 0; background: none; color: var(--ink-color);
+  font: inherit; font-weight: 600; padding: 14px 22px; cursor: pointer; border-radius: 6px;
+  transition: transform 80ms ease;
+}
+.ink-button:focus-visible { outline: none; }
+.ink-button:active { transform: translate(1px, 1.5px) rotate(-0.3deg); }
+.ink-button[data-variant="solid"][data-inked], .ink-button[data-variant="accent"][data-inked] { color: var(--ink-paper); }
+.ink-button[data-variant="accent"] .ink-l-fill .ink-stroke { fill: var(--ink-accent); }
+.ink-button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.ink-check, .ink-switch { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; padding: 4px 0; }
+.ink-check input, .ink-switch input, .ink-slider input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.ink-check input:focus-visible, .ink-switch input:focus-visible { outline: none; }
+.ink-check .ink-box { width: 20px; height: 20px; flex: none; }
+.ink-switch .ink-track { width: 52px; height: 28px; flex: none; }
+.ink-slider { position: relative; height: 32px; width: 100%; display: block; }
+.ink-slider input { width: 100%; height: 100%; inset: 0; cursor: pointer; }
+
+.ink-field { display: block; }
+.ink-field input, .ink-field textarea { width: 100%; border: 0; background: none; color: var(--ink-color); font-family: inherit; font-size: 20px; line-height: 1.4; padding: 10px 6px 8px; outline: none; }
+.ink-field[data-style="box"] input, .ink-field[data-style="box"] textarea { padding: 12px 14px; }
+.ink-field ::placeholder { color: var(--ink-faint); font-style: italic; }
+.ink-field .ink-written { font-size: 24px; color: transparent; -webkit-text-fill-color: transparent; caret-color: var(--ink-color); }
+.ink-field .ink-written::placeholder { font-family: var(--ink-placeholder-font, inherit); font-size: 20px; color: var(--ink-faint); -webkit-text-fill-color: var(--ink-faint); }
+.ink-field .ink-written::selection { background: color-mix(in srgb, var(--ink-highlighter) 70%, transparent); color: transparent; -webkit-text-fill-color: transparent; }
+.ink-written-text { position: absolute; pointer-events: none; z-index: 1; overflow-x: clip; overflow-y: visible; overflow-clip-margin: 6px; }
+.ink-written-text[data-multi] { overflow: clip; }
+
+.ink-tabs { display: flex; gap: 4px; }
+.ink-tabs [role="tab"] { appearance: none; border: 0; background: none; color: var(--ink-soft); font: inherit; padding: 12px 16px 16px; cursor: pointer; }
+.ink-tabs [role="tab"][aria-selected="true"] { color: var(--ink-color); }
+
+.ink-icon { display: inline-block; width: 24px; height: 24px; vertical-align: middle; }
+span.ink-mark, a.ink-mark { display: inline-block; }
+a.ink-mark { color: inherit; text-decoration: none; }
+
+/* ---------- page turn ---------- */
+.pen-ink-turn { position: fixed; inset: 0; z-index: 2147483000; pointer-events: none; }
+.pen-ink-turn > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pit-flap { background-color: var(--ink-paper); }
+.pit-edge { overflow: visible; filter: url(#ink); }
+.pit-edge polygon { stroke: var(--ink-color); stroke-opacity: 0.55; stroke-width: 1.3; stroke-linejoin: round; }
+html.pen-ink-turning body { pointer-events: none; user-select: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-stroke { transition: none; }
+}

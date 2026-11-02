@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "paths": { "@pen-ink/react": ["../../packages/react/src/index.ts"], "@pen-ink/core": ["../../packages/core/src/index.ts"], "@pen-ink/fonts": ["../../packages/fonts/src/index.ts"] } },
+  "include": ["src"]
+}
