@@ -81,6 +81,8 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
  * Pull that slack in so the letters sit centred and the button isn't overly tall. */
 .ink-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; }
 .ink-button .ink-handwriting { margin-bottom: -.84em; }
+/* Same slack on the install line, so the command sits centred next to the Copy button. */
+.install > .ink-handwriting { margin-bottom: -1em; }
 /* Labels on dark marker fills are written in paper colour. */
 .ink-button[data-variant="solid"] .ink-handwriting .ink-stroke, .ink-button[data-variant="accent"] .ink-handwriting .ink-stroke,
 .ink-button[data-variant="solid"] .ink-handwriting .ink-stroke.wet, .ink-button[data-variant="accent"] .ink-handwriting .ink-stroke.wet { fill: var(--ink-paper); }
