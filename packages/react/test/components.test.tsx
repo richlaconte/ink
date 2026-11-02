@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { settings } from '@pen-ink/core';
-import { Handwriting, InkButton, InkCard, InkCheckbox, InkInput, InkProgress, InkProvider, InkRadio, InkTabs, InkTextarea, Write, usePageTurn } from '../src';
+import { useInkLayer, Handwriting, InkButton, InkCard, InkCheckbox, InkInput, InkProgress, InkProvider, InkRadio, InkTabs, InkTextarea, Write, usePageTurn } from '../src';
 
 const paths = (el: Element) => el.querySelectorAll('.ink-stroke').length;
 
@@ -181,6 +181,34 @@ describe('progress', () => {
       expect(fill()).toEqual(at50);
     } finally {
       settings.speed = speed;
+      ow.mockRestore();
+      oh.mockRestore();
+    }
+  });
+});
+
+describe('ink layers', () => {
+  it('redraws to fit when the host changes size while it is drawing (e.g. a label whose font arrives late)', async () => {
+    let width = 80;
+    const ow = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(() => width);
+    const oh = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(40);
+    const drawnAt: number[] = [];
+    try {
+      function Box() {
+        const ref = useRef<HTMLDivElement>(null);
+        const { svgRef } = useInkLayer(ref, {
+          async draw(ink) {
+            drawnAt.push(ink.w);
+            if (drawnAt.length === 1) { await new Promise((r) => setTimeout(r, 20)); width = 160; } // grows mid-draw
+          },
+        });
+        return <div ref={ref} className="ink-host"><svg ref={svgRef} className="ink-layer" /></div>;
+      }
+      render(<InkProvider><Box /></InkProvider>);
+      await waitFor(() => expect(drawnAt).toEqual([80, 160]));
+      await new Promise((r) => setTimeout(r, 50));
+      expect(drawnAt).toEqual([80, 160]); // and settles: no further redraws once the size is stable
+    } finally {
       ow.mockRestore();
       oh.mockRestore();
     }

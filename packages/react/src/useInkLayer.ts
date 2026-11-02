@@ -101,10 +101,21 @@ export function useInkLayer<T extends HTMLElement = HTMLElement>(hostRef: RefObj
     };
   }, [hostRef, layer]);
 
-  const run = useCallback((info: DrawInfo & { boil?: boolean }) => {
-    if (!hostRef.current || !svgRef.current) return Promise.resolve();
+  // The size the ink was last drawn at. A host can change size while it's drawing (e.g. a label
+  // whose handwriting font arrives after the outline started), so this is checked again when a
+  // draw finishes, and the ink is redrawn to fit.
+  const drawnSize = useRef<{ w: number; h: number } | null>(null);
+  const run = useCallback((info: DrawInfo & { boil?: boolean }): Promise<void> => {
+    const host = hostRef.current;
+    if (!host || !svgRef.current) return Promise.resolve();
+    const size = { w: host.offsetWidth, h: host.offsetHeight };
     return Promise.resolve(optsRef.current.draw(makeInk(), info)).then(() => {
-      if (!info.boil) { drawnRef.current = true; hostRef.current?.setAttribute('data-inked', ''); }
+      if (info.boil) return;
+      drawnRef.current = true;
+      drawnSize.current = size;
+      hostRef.current?.setAttribute('data-inked', '');
+      const now = hostRef.current;
+      if (now && (now.offsetWidth !== size.w || now.offsetHeight !== size.h)) return run({ animate: false, duration: 0 });
     });
   }, [hostRef, makeInk]);
 
@@ -116,17 +127,18 @@ export function useInkLayer<T extends HTMLElement = HTMLElement>(hostRef: RefObj
     const after: After = a && typeof a === 'object' && 'current' in a ? a.current : (a as After);
     const handle = stage.register({ el: host, draw: (info) => run(info), after, delay: opts.delay, duration: opts.duration });
     handleRef.current = handle;
-    return () => { handle.unregister(); layers.current.forEach((d) => d.remove()); layers.current.clear(); drawnRef.current = false; };
+    return () => { handle.unregister(); layers.current.forEach((d) => d.remove()); layers.current.clear(); drawnRef.current = false; drawnSize.current = null; };
   }, [stage, run]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Redraw instantly when the host changes size.
+  // Redraw instantly when the host changes size. (A change during a draw is picked up when that
+  // draw finishes; see `run`.)
   useEffect(() => {
     const host = hostRef.current;
     if (!host || typeof ResizeObserver === 'undefined') return;
-    let w = host.offsetWidth, h = host.offsetHeight, t = 0;
+    let t = 0;
     const ro = new ResizeObserver(() => {
-      if (!drawnRef.current || (host.offsetWidth === w && host.offsetHeight === h)) return;
-      w = host.offsetWidth; h = host.offsetHeight;
+      const d = drawnSize.current;
+      if (!drawnRef.current || !d || (host.offsetWidth === d.w && host.offsetHeight === d.h)) return;
       clearTimeout(t);
       t = window.setTimeout(() => run({ animate: false, duration: 0 }), 60);
     });
