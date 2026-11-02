@@ -16,5 +16,6 @@
     "test": "echo 'no tests'"
   },
   "keywords": ["font", "handwriting", "single-line", "hershey", "plotter"],
+  "homepage": "https://richlaconte.github.io/ink/",
   "repository": { "type": "git", "url": "git+https://github.com/richlaconte/ink.git", "directory": "packages/fonts" }
 }

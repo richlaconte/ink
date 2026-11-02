@@ -1,0 +1,77 @@
+body { margin: 0; min-height: 100vh; font: 18px/1.6 'Newsreader', Georgia, serif; -webkit-font-smoothing: antialiased; color: var(--ink-color); }
+* { box-sizing: border-box; }
+a { color: inherit; }
+code, pre { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.skip { position: absolute; left: -9999px; top: 8px; padding: 8px 12px; background: var(--ink-paper); z-index: 10; }
+.skip:focus { left: 16px; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 1120px; margin: 0 auto; padding: 18px 24px; }
+.topbar nav { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.topbar nav a { color: var(--ink-soft); text-decoration: none; padding: 4px 2px; }
+.brand { font: 600 13px/1 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; text-decoration: none; }
+.theme { appearance: none; background: none; border: 0; color: var(--ink-color); cursor: pointer; padding: 4px; display: inline-flex; }
+
+.page { max-width: 1120px; margin: 0 auto; padding: 24px 24px 96px; }
+.hero { position: relative; padding-top: 32px; }
+.hero h1 { font-size: 104px; margin: 0; line-height: 1.1; }
+.margin-note { position: absolute; right: 0; top: 96px; width: 300px; }
+.eyebrow { font: 600 12px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-accent); margin: 0 0 10px; }
+.lede { font-size: 23px; color: var(--ink-soft); max-width: 58ch; margin: 18px 0 28px; }
+h2 { font-size: 44px; font-weight: 400; line-height: 1.15; margin: 0 0 14px; }
+.sub { color: var(--ink-soft); max-width: 62ch; margin: 0 0 28px; }
+.label { display: block; font: 600 12px/1 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 14px; padding: 0; }
+.hint { color: var(--ink-soft); font-size: 16px; margin: 0; }
+.fine { color: var(--ink-soft); font-size: 15px; margin: 0; max-width: 70ch; }
+
+.install { display: inline-flex; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; border: 1px dashed var(--ink-faint); border-radius: 10px; max-width: 100%; }
+.install code { font-size: 15px; white-space: nowrap; overflow-x: auto; }
+.cta { margin-top: 24px; }
+
+.section { margin-top: 112px; }
+.row { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+.row.spread { justify-content: space-between; }
+.stack { display: flex; flex-direction: column; gap: 28px; }
+.stack.tight { gap: 20px; }
+.grid { display: grid; gap: 36px; }
+.grid.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; }
+.grid.three { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+
+.card { padding: 26px; display: flex; flex-direction: column; gap: 10px; }
+.card h3 { font-size: 24px; font-weight: 400; margin: 0; }
+.card p { margin: 0; color: var(--ink-soft); font-size: 17px; }
+.form { gap: 26px; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 18px; }
+.output { min-height: 260px; justify-content: flex-start; }
+.output .written { margin: 8px 0 0; font-size: 44px; line-height: 1.35; color: var(--ink-color); }
+
+.comp-panel { padding-top: 28px; min-height: 220px; }
+.marks { font-size: 22px; max-width: 40ch; margin: 0; }
+
+.facts { margin: 0; padding-left: 20px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 8px; }
+.facts code, .sub code { font-size: .85em; }
+.code { padding: 18px 20px 20px; min-width: 0; }
+.code-head { display: flex; align-items: center; justify-content: space-between; }
+.code-head .label { margin: 0; }
+.code pre { margin: 0; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+
+.footer { max-width: 1120px; margin: 0 auto; padding: 0 24px 48px; display: flex; flex-direction: column; gap: 24px; }
+
+@media (max-width: 860px) {
+  .margin-note { display: none; }
+  .hero h1 { font-size: 72px; }
+  h2 { font-size: 34px; }
+  .section { margin-top: 80px; }
+}
+@media (max-width: 560px) {
+  .topbar, .page, .footer { padding-left: 16px; padding-right: 16px; }
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .topbar nav { gap: 14px; }
+  .hero h1 { font-size: 60px; }
+  .lede { font-size: 20px; }
+  .card { padding: 20px; }
+  .output .written { font-size: 34px; }
+}

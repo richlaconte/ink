@@ -6,7 +6,9 @@
     "build": "pnpm -r --filter \"./packages/**\" build",
     "test": "pnpm -r --filter \"./packages/**\" test",
     "typecheck": "pnpm -r typecheck",
-    "dev": "pnpm --filter demo dev"
+    "dev": "pnpm --filter demo dev",
+    "site": "pnpm --filter site dev",
+    "build:site": "pnpm --filter site build"
   },
   "engines": {
     "node": ">=18"
@@ -14,6 +16,7 @@
   "packageManager": "pnpm@9.15.0",
   "devDependencies": {
     "@testing-library/react": "16",
+    "@types/node": "22",
     "@types/react": "19",
     "@types/react-dom": "19",
     "@vitejs/plugin-react": "4",

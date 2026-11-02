@@ -1,5 +1,7 @@
 # pen-ink
 
+**[Live site & playground →](https://richlaconte.github.io/ink/)**
+
 React components that are **drawn for you in real time, in pen and ink**. Buttons, cards, form controls and headings sketch themselves in; inputs write your text in ink as you type; pages turn like paper.
 
 Underneath it's all ordinary, semantic HTML: a `<button>` is still a button, a checkbox is a native checkbox, and the ink is an `aria-hidden` SVG layer on top.
@@ -155,6 +157,7 @@ Current Chrome, Edge, Firefox and Safari. ESM only.
 ```sh
 pnpm install
 pnpm dev        # demo app (apps/demo), using the library sources with hot reload
+pnpm site       # promo site (apps/site), deployed to GitHub Pages on push to main
 pnpm test       # unit + component tests
 pnpm build      # build all packages
 ```
