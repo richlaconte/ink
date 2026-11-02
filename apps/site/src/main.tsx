@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Handwriting, InkArrow, InkButton, InkCard, InkCheckbox, InkCircle, InkDivider, InkHighlight, InkIcon,
@@ -54,6 +54,19 @@ export function App() {
   );
 }`;
 
+/** True below the phone breakpoint; follows the window as it resizes. */
+const NARROW = '(max-width: 560px)';
+function useNarrow() {
+  const [narrow, setNarrow] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(NARROW).matches);
+  useEffect(() => {
+    const mq = matchMedia(NARROW), on = () => setNarrow(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return narrow;
+}
+const prefersReducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function toggleTheme() {
   const root = document.documentElement;
   const dark = root.dataset.inkTheme ? root.dataset.inkTheme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -90,14 +103,15 @@ function Install() {
 const Eyebrow = ({ children }: { children: string }) => <Mono as="p" caps className="eyebrow ink-accent" wrap={false}>{children}</Mono>;
 const SmallLabel = ({ children, as = 'span' }: { children: string; as?: 'span' | 'legend' }) => <Mono as={as} caps className="label" wrap={false}>{children}</Mono>;
 
-function Header() {
+function Header({ narrow }: { narrow: boolean }) {
   return (
     <header className="topbar">
       <a className="brand" href="#top" aria-label="pen-ink home"><Mono caps wrap={false}>pen-ink</Mono></a>
       <nav aria-label="Main">
-        <InkUnderline as="a" href="#try" hover><Label>Try it</Label></InkUnderline>
-        <InkUnderline as="a" href="#components" hover><Label>Components</Label></InkUnderline>
-        <InkUnderline as="a" href="#start" hover><Label>Get started</Label></InkUnderline>
+        {/* On a phone the page is one scroll; the section links just crowd the bar. */}
+        {!narrow && <InkUnderline as="a" href="#try" hover><Label>Try it</Label></InkUnderline>}
+        {!narrow && <InkUnderline as="a" href="#components" hover><Label>Components</Label></InkUnderline>}
+        {!narrow && <InkUnderline as="a" href="#start" hover><Label>Get started</Label></InkUnderline>}
         <InkUnderline as="a" href={REPO} hover><Label>GitHub</Label></InkUnderline>
         <button className="theme" aria-label="Toggle dark paper" onClick={toggleTheme}><InkIcon name="moon" size={20} /></button>
       </nav>
@@ -122,6 +136,45 @@ function Hero() {
         <InkButton variant="solid" onClick={() => document.getElementById('try')?.scrollIntoView({ behavior: 'smooth' })}><Label>Try it below</Label></InkButton>
         <InkButton onClick={() => { location.href = REPO; }}><Label>View on GitHub</Label></InkButton>
       </div>
+    </section>
+  );
+}
+
+/** Phone hero: a big title with its margin note, and a live card that shows the pen at work. */
+function HeroNarrow() {
+  // The second and third items tick themselves once the page has sketched in.
+  const [ticks, setTicks] = useState([true, false, false]);
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const t1 = setTimeout(() => setTicks((t) => [t[0], true, t[2]]), 2600);
+    const t2 = setTimeout(() => setTicks((t) => [t[0], t[1], true]), 3500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+  const toggle = (i: number) => () => setTicks((t) => t.map((v, j) => (j === i ? !v : v)));
+  const ITEMS = ['A button is still a button', 'Screen readers get real text', 'Keyboard focus just works'];
+  return (
+    <section className="hero hero-narrow" id="top">
+      <Eyebrow>Open-source React components</Eyebrow>
+      <Handwriting as="h1" hand="allure" nib="dip" weight={0.07} id="title">pen-ink</Handwriting>
+      <div className="note-narrow" aria-hidden="true">
+        <InkArrow after="#title" from="br" to="tl" curve={-0.35} className="note-arrow" />
+        <Handwriting hand="casual" className="ink-accent" size={20} after="#title" delay={150} wrap={false}>drawn live, stroke by stroke</Handwriting>
+      </div>
+      <Body as="p" className="lede">Interfaces drawn for you in real time, in pen and ink. Underneath, it's all ordinary HTML.</Body>
+      <InkCard as="figure" className="card demo-card" sketch="sketch">
+        <SmallLabel>Field notes</SmallLabel>
+        <Head as="p" className="demo-title">What the ink doesn't change</Head>
+        <div className="demo-list">
+          {ITEMS.map((text, i) => (
+            <InkCheckbox key={text} checked={ticks[i]} onChange={toggle(i)}><Label>{text}</Label></InkCheckbox>
+          ))}
+        </div>
+      </InkCard>
+      <div className="cta-narrow">
+        <InkButton variant="solid" onClick={() => document.getElementById('try')?.scrollIntoView({ behavior: 'smooth' })}><Label>Try it</Label></InkButton>
+        <InkButton onClick={() => { location.href = REPO; }}><Label>GitHub</Label></InkButton>
+      </div>
+      <Install />
     </section>
   );
 }
@@ -327,12 +380,13 @@ function Footer() {
 }
 
 function App() {
+  const narrow = useNarrow();
   return (
     <>
       <a className="skip" href="#try">Skip to the demo</a>
-      <Header />
+      <Header narrow={narrow} />
       <main className="page">
-        <Hero />
+        {narrow ? <HeroNarrow /> : <Hero />}
         <Playground />
         <Principles />
         <Components />
