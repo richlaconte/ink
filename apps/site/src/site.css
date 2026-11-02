@@ -1,7 +1,6 @@
-body { margin: 0; min-height: 100vh; font: 18px/1.6 'Newsreader', Georgia, serif; -webkit-font-smoothing: antialiased; color: var(--ink-color); }
+body { margin: 0; min-height: 100vh; font: 18px/1.6 Georgia, serif; -webkit-font-smoothing: antialiased; color: var(--ink-color); }
 * { box-sizing: border-box; }
 a { color: inherit; }
-code, pre { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
@@ -11,23 +10,24 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 1120px; margin: 0 auto; padding: 18px 24px; }
 .topbar nav { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
 .topbar nav a { color: var(--ink-soft); text-decoration: none; padding: 4px 2px; }
-.brand { font: 600 13px/1 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; text-decoration: none; }
+.brand { font-size: 13px; text-decoration: none; display: inline-block; }
 .theme { appearance: none; background: none; border: 0; color: var(--ink-color); cursor: pointer; padding: 4px; display: inline-flex; }
 
 .page { max-width: 1120px; margin: 0 auto; padding: 24px 24px 96px; }
 .hero { position: relative; padding-top: 32px; }
 .hero h1 { font-size: 104px; margin: 0; line-height: 1.1; }
 .margin-note { position: absolute; right: 0; top: 96px; width: 300px; }
-.eyebrow { font: 600 12px/1 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-accent); margin: 0 0 10px; }
+.eyebrow { font-size: 12px; margin: 0 0 10px; }
 .lede { font-size: 23px; color: var(--ink-soft); max-width: 58ch; margin: 18px 0 28px; }
 h2 { font-size: 44px; font-weight: 400; line-height: 1.15; margin: 0 0 14px; }
 .sub { color: var(--ink-soft); max-width: 62ch; margin: 0 0 28px; }
-.label { display: block; font: 600 12px/1 'JetBrains Mono', monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 14px; padding: 0; }
+.label { display: block; font-size: 11px; --ink-color: var(--ink-faint); margin: 0 0 12px; padding: 0; }
 .hint { color: var(--ink-soft); font-size: 16px; margin: 0; }
-.fine { color: var(--ink-soft); font-size: 15px; margin: 0; max-width: 70ch; }
+.fine { font-size: 15px; margin: 0; flex: 1 1 360px; max-width: 640px; }
+.fine p { margin: 0; }
 
 .install { display: inline-flex; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; border: 1px dashed var(--ink-faint); border-radius: 10px; max-width: 100%; }
-.install code { font-size: 15px; white-space: nowrap; overflow-x: auto; }
+.install code { font-size: 15px; min-width: 0; }
 .cta { margin-top: 24px; }
 
 .section { margin-top: 112px; }
@@ -49,16 +49,32 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .output .written { margin: 8px 0 0; font-size: 44px; line-height: 1.35; color: var(--ink-color); }
 
 .comp-panel { padding-top: 28px; min-height: 220px; }
-.marks { font-size: 22px; max-width: 40ch; margin: 0; }
+.marks { font-size: 22px; max-width: 34em; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 
 .facts { margin: 0; padding-left: 20px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 8px; }
-.facts code, .sub code { font-size: .85em; }
 .code { padding: 18px 20px 20px; min-width: 0; }
 .code-head { display: flex; align-items: center; justify-content: space-between; }
 .code-head .label { margin: 0; }
-.code pre { margin: 0; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+.code-body { overflow-x: auto; padding-bottom: 6px; }
+.code-body pre { margin: 0; font-size: 13px; }
+/* Code keeps its natural size and scrolls, rather than shrinking to fit. */
+.code-body .ink-text-svg { max-width: none; }
 
 .footer { max-width: 1120px; margin: 0 auto; padding: 0 24px 48px; display: flex; flex-direction: column; gap: 24px; }
+
+/* ---------- Drawn type ----------
+ * Strokes are filled with --ink-color, so muted text re-points that token
+ * instead of setting `color`. */
+.soft, .lede, .sub, .hint, .facts, .topbar nav a { --ink-color: var(--ink-soft); }
+.ink-tabs [role="tab"]:not([aria-selected="true"]) { --ink-color: var(--ink-soft); }
+.ink-handwriting { display: block; }
+.ink-button .ink-handwriting, .ink-check .ink-handwriting, .ink-switch .ink-handwriting, .ink-mark .ink-handwriting, .ink-tabs .ink-handwriting { display: inline-block; vertical-align: middle; }
+.ink-button { display: inline-flex; align-items: center; gap: 8px; }
+/* Labels on dark marker fills are written in paper colour. */
+.ink-button[data-variant="solid"] .ink-handwriting .ink-stroke, .ink-button[data-variant="accent"] .ink-handwriting .ink-stroke,
+.ink-button[data-variant="solid"] .ink-handwriting .ink-stroke.wet, .ink-button[data-variant="accent"] .ink-handwriting .ink-stroke.wet { fill: var(--ink-paper); }
+.links { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 10px 0 0; font-size: 15px; }
+.facts li::marker { color: var(--ink-faint); }
 
 @media (max-width: 860px) {
   .margin-note { display: none; }

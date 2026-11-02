@@ -13,9 +13,6 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <!-- Blank paper until React mounts, so nothing shows before it's drawn. Falls back to showing the page after 3 s. -->
   <script>(function (d) { try { var t = localStorage.getItem('ink-theme'); if (t) d.dataset.inkTheme = t; } catch (e) {} d.classList.add('ink-pending'); setTimeout(function () { d.classList.remove('ink-pending'); }, 3000); })(document.documentElement);</script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
 </head>
 <body class="ink-paper">
   <div id="root"></div>
