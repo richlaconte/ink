@@ -1,7 +1,7 @@
 export { flattenPath, samplePath, resample, arcLengths, type Pt } from './path';
 export { rng, hash, noise1 } from './random';
 export { Stroke, NIBS, DEFAULT_PEN, humanize, smooth, type Pen, type NibKind } from './stroke';
-export { Drawing, settings, schedule, minJerk, createSvg, SVGNS, type InkSettings, type PlayOptions } from './drawing';
+export { Drawing, settings, schedule, minJerk, createSvg, SVGNS, type InkSettings, type PlayOptions, type DrawingItem } from './drawing';
 export { ensureFilters, updateFilters, filterParams, type FilterParams } from './filters';
 export * as shapes from './shapes';
 export type { Shape, Strokes } from './shapes';

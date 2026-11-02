@@ -36,7 +36,7 @@ const NIBS: { value: NibKind; label: string }[] = [
   { value: 'brush', label: 'Brush' },
   { value: 'ball', label: 'Ballpoint' },
 ];
-const shortHand = (k: HandKey) => handNames[k].replace(' 1-stroke', '').replace(' medium', '');
+const shortHand = (k: HandKey) => handNames[k].replace(/ (1-stroke|medium|SingleLine|Hand)$/, '');
 
 const QUICKSTART = `import { InkProvider, InkCard, Handwriting, Write, InkInput, InkButton } from '@pen-ink/react';
 import '@pen-ink/react/styles.css';

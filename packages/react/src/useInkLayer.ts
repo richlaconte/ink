@@ -28,6 +28,11 @@ export interface InkLayer {
   paint(name: string, strokes: Pt[][], opts?: PaintOptions): Promise<void>;
   /** Lift a layer's ink off. */
   erase(name: string, ms?: number): Promise<void>;
+  /**
+   * The named layer itself, for incremental changes: `add()` strokes and `play()` only the new
+   * ones, or `lift()` particular strokes off, instead of repainting the whole layer.
+   */
+  layer(name: string, cls?: string): Drawing;
   /** Position of a descendant relative to the host. */
   boxOf(el: Element | null): { x: number; y: number; w: number; h: number };
 }
@@ -87,6 +92,7 @@ export function useInkLayer<T extends HTMLElement = HTMLElement>(hostRef: RefObj
         return animate ? d.play({ speed, duration }) : d.instant();
       },
       erase(name, ms = 200) { const d = layers.current.get(name); return d ? d.fade(ms) : Promise.resolve(); },
+      layer,
       boxOf(el) {
         if (!el) return { x: 0, y: 0, w: 0, h: 0 };
         const a = host.getBoundingClientRect(), b = el.getBoundingClientRect();

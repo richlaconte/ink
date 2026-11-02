@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { renderToString } from 'react-dom/server';
 import { useState } from 'react';
 import { settings } from '@pen-ink/core';
-import { Handwriting, InkButton, InkCard, InkCheckbox, InkInput, InkProvider, InkRadio, InkTabs, InkTextarea, Write, usePageTurn } from '../src';
+import { Handwriting, InkButton, InkCard, InkCheckbox, InkInput, InkProgress, InkProvider, InkRadio, InkTabs, InkTextarea, Write, usePageTurn } from '../src';
 
 const paths = (el: Element) => el.querySelectorAll('.ink-stroke').length;
 
@@ -112,5 +112,39 @@ describe('server rendering', () => {
     expect(html).toContain('Hello');
     expect(html).toContain('<button');
     expect(html).toContain('type="checkbox"');
+  });
+});
+
+describe('progress', () => {
+  it('a value change adds or lifts only the strokes at the edge; the rest of the fill is untouched', async () => {
+    // jsdom has no layout: give hosts a size so there is something to hatch.
+    const ow = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(300);
+    const oh = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(26);
+    settings.reducedMotion = true; // draw and lift instantly
+    try {
+      function Bar() {
+        const [v, setV] = useState(0.4);
+        return <><InkProgress value={v} label="Upload" /><button onClick={() => setV(0.7)}>more</button><button onClick={() => setV(0.2)}>less</button></>;
+      }
+      render(<InkProvider><Bar /></InkProvider>);
+      const bar = screen.getByRole('progressbar');
+      const fill = () => [...bar.querySelectorAll('.ink-l-fill .ink-stroke')];
+      await waitFor(() => expect(fill().length).toBeGreaterThan(0));
+      const at40 = fill();
+
+      fireEvent.click(screen.getByRole('button', { name: 'more' }));
+      await waitFor(() => expect(fill().length).toBeGreaterThan(at40.length));
+      const at70 = fill();
+      expect(at40.every((node, i) => at70[i] === node)).toBe(true); // same nodes: added to, not repainted
+
+      fireEvent.click(screen.getByRole('button', { name: 'less' }));
+      await waitFor(() => expect(fill().length).toBeLessThan(at40.length));
+      const at20 = fill();
+      expect(at20.every((node, i) => at40[i] === node)).toBe(true); // only the end was taken off
+    } finally {
+      settings.reducedMotion = false;
+      ow.mockRestore();
+      oh.mockRestore();
+    }
   });
 });

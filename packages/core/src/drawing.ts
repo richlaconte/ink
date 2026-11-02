@@ -68,7 +68,8 @@ export interface PlayOptions {
   onProgress?: (p: number) => void;
 }
 
-interface Item { stroke: Stroke; el: SVGPathElement; delay: number; done: boolean }
+export interface DrawingItem { stroke: Stroke; el: SVGPathElement; delay: number; done: boolean }
+type Item = DrawingItem;
 
 export class Drawing {
   readonly g: SVGGElement;
@@ -183,6 +184,19 @@ export class Drawing {
     g.style.transition = `opacity ${ms}ms ease`;
     g.style.opacity = '0';
     return new Promise((res) => setTimeout(() => { this.clear(); g.style.opacity = ''; g.style.transition = ''; res(); }, ms));
+  }
+
+  /**
+   * Lift some strokes off (fade out) and drop them, leaving the rest untouched.
+   * Use it with `add()` + `play()` to change a drawing incrementally instead of redrawing it.
+   */
+  lift(items: Item[], ms = 200): Promise<void> {
+    if (!items.length) return Promise.resolve();
+    const gone = new Set(items);
+    this.items = this.items.filter((it) => !gone.has(it));
+    if (ms <= 0 || settings.reducedMotion) { items.forEach((it) => it.el.remove()); return Promise.resolve(); }
+    for (const it of items) { it.el.style.transition = `opacity ${ms}ms ease`; it.el.style.opacity = '0'; }
+    return new Promise((res) => setTimeout(() => { items.forEach((it) => it.el.remove()); res(); }, ms));
   }
 
   remove() { this.stop(); this.g.remove(); }

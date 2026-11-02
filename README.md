@@ -63,7 +63,7 @@ All components accept their native element's props, plus these ordering props:
 | `<InkInput>`, `<InkTextarea>` | The typed text is drawn in ink. The native field does all the editing (caret, selection, IME, undo, autofill): it's set in an invisible *metrics font* whose advance widths match the ink exactly, so the caret and selection line up. Props: `label`, `boxed`, `write={false}`, `hand`. Password, number and date inputs stay native. Works controlled or uncontrolled. |
 | `<InkCheckbox accent>`, `<InkRadio>`, `<InkSwitch>` | Native inputs (visually hidden, still focusable). |
 | `<InkSlider>` | Native range input with a hand-drawn track and knob. |
-| `<InkProgress value={0..1}>` | Hatched fill. `role="progressbar"` with values. |
+| `<InkProgress value={0..1}>` | Hatched fill. A change adds or lifts only the strokes at the edge. `role="progressbar"` with values. |
 | `<InkTabs items value onValueChange>` | Tablist with arrow-key navigation; the underline is redrawn under the selected tab. You render the panels. |
 | `<InkHighlight>`, `<InkCircle>`, `<InkUnderline hover double as>` | Inline marks. Use `hover` for links (`as="a"`). |
 | `<InkDivider>`, `<InkIcon name size label>`, `<InkArrow from to curve>` | Icons: home, mail, user, bell, pencil, trash, heart, star, feather, search, plus, x, bookmark, sun, moon, arrow. Arrows are for margin notes: `<InkArrow after="#note" from="r" to="l" />`. |
@@ -103,7 +103,7 @@ function Stamp() {
 }
 ```
 
-`ink.paint(layer, strokes, opts)` and `ink.erase(layer)` manage named layers. `shapes` includes `line`, `rect`, `pill`, `ellipse`, `circleAround`, `hatch`, `crosshatch`, `scribbleFill`, `hatchPolygon`, `check`, `cross`, `underline`, `strike`, `scratchOut`, `arrow`, `flourish`, `spiral` and `fromPath`.
+`ink.paint(layer, strokes, opts)` and `ink.erase(layer)` manage named layers. For incremental changes, `ink.layer(name)` returns the layer's `Drawing`: `add()` strokes and `play()` animates only the new ones, and `lift(items)` takes particular strokes off, so the rest of the drawing stays as it was (this is how `InkProgress` grows and shrinks). `shapes` includes `line`, `rect`, `pill`, `ellipse`, `circleAround`, `hatch`, `crosshatch`, `scribbleFill`, `hatchPolygon`, `check`, `cross`, `underline`, `strike`, `scratchOut`, `arrow`, `flourish`, `spiral` and `fromPath`.
 
 ## Page turns
 

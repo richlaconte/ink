@@ -2,6 +2,9 @@ body { margin: 0; min-height: 100vh; font: 18px/1.6 Georgia, serif; -webkit-font
 * { box-sizing: border-box; }
 a { color: inherit; }
 html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+/* Ink layers overhang their hosts by a few px so strokes can overshoot; at phone gutters that would
+ * nudge the page sideways. clip (not hidden) so no scroll container is created. */
+html, body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 .skip { position: absolute; left: -9999px; top: 8px; padding: 8px 12px; background: var(--ink-paper); z-index: 10; }
@@ -26,7 +29,7 @@ h2 { font-size: 44px; font-weight: 400; line-height: 1.15; margin: 0 0 14px; }
 .fine { font-size: 15px; margin: 0; flex: 1 1 360px; max-width: 640px; }
 .fine p { margin: 0; }
 
-.install { display: inline-flex; align-items: center; gap: 12px; padding: 6px 6px 6px 16px; border: 1px dashed var(--ink-faint); border-radius: 10px; max-width: 100%; }
+.install { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 6px 6px 6px 16px; border: 1px dashed var(--ink-faint); border-radius: 10px; max-width: 100%; }
 .install code { font-size: 15px; min-width: 0; }
 .cta { margin-top: 24px; }
 
@@ -68,8 +71,16 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .soft, .lede, .sub, .hint, .facts, .topbar nav a { --ink-color: var(--ink-soft); }
 .ink-tabs [role="tab"]:not([aria-selected="true"]) { --ink-color: var(--ink-soft); }
 .ink-handwriting { display: block; }
-.ink-button .ink-handwriting, .ink-check .ink-handwriting, .ink-switch .ink-handwriting, .ink-mark .ink-handwriting, .ink-tabs .ink-handwriting { display: inline-block; vertical-align: middle; }
-.ink-button { display: inline-flex; align-items: center; gap: 8px; }
+/* Labels in flex and inline contexts keep their natural size. `max-width: 100%` on an SVG
+ * inside a shrink-to-fit box can resolve against zero in WebKit, collapsing the control
+ * while the (overflow: visible) ink spills out of it. */
+:is(.ink-button, .ink-check, .ink-switch, .ink-mark, .ink-tabs, .topbar, .install, .code-head, .links, .marks, .footer .row) .ink-handwriting { flex: none; }
+:is(.ink-button, .ink-check, .ink-switch, .ink-mark, .ink-tabs, .topbar, .install, .code-head, .links, .marks, .footer .row) .ink-text-svg { max-width: none; }
+.ink-check .ink-handwriting, .ink-switch .ink-handwriting, .ink-mark .ink-handwriting, .ink-tabs .ink-handwriting { display: inline-block; vertical-align: middle; }
+/* Buttons: the label's SVG reserves a full line plus descender room below the letters.
+ * Pull that slack in so the letters sit centred and the button isn't overly tall. */
+.ink-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; }
+.ink-button .ink-handwriting { margin-bottom: -.84em; }
 /* Labels on dark marker fills are written in paper colour. */
 .ink-button[data-variant="solid"] .ink-handwriting .ink-stroke, .ink-button[data-variant="accent"] .ink-handwriting .ink-stroke,
 .ink-button[data-variant="solid"] .ink-handwriting .ink-stroke.wet, .ink-button[data-variant="accent"] .ink-handwriting .ink-stroke.wet { fill: var(--ink-paper); }
@@ -90,4 +101,7 @@ fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
   .lede { font-size: 20px; }
   .card { padding: 20px; }
   .output .written { font-size: 34px; }
+  .opts { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 12px; font-size: 15px; }
+  .ink-tabs [role="tab"] { font-size: 15px; padding: 10px 8px 14px; }
+  .install code { font-size: 13px; }
 }

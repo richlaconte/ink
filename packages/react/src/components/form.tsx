@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type RefObject, type TextareaHTMLAttributes } from 'react';
-import { InkText, shapes as S, type After } from '@pen-ink/core';
+import { InkText, shapes as S, type After, type DrawingItem, type Pt } from '@pen-ink/core';
 import { HostContext, useInk } from '../context';
 import { useInkLayer, type InkLayer } from '../useInkLayer';
 import { Write } from '../Write';
@@ -154,17 +154,49 @@ export interface InkProgressProps extends React.HTMLAttributes<HTMLDivElement>, 
 export function InkProgress({ value, label, className, after, delay, duration, style, ...rest }: InkProgressProps) {
   const ref = useRef<HTMLDivElement>(null);
   const v = Math.max(0, Math.min(1, value));
-  const fill = (ink: InkLayer, animate: boolean, duration = 0) =>
-    ink.paint('fill', S.hatch({ type: 'rect', x: 3, y: 3, w: (ink.w - 6) * v, h: ink.h - 6 }, { seed: ink.seed, gap: 4, angle: -1.1, inset: 0.5 }), { animate, duration, speed: 1600, pen: { size: ink.pen.size * 0.8 } });
+  // The hatch for a full bar, computed once per size and seed. Each value shows the strokes that
+  // fall inside its fill, so a change adds (or lifts off) only the strokes at the edge: the rest
+  // of the fill stays exactly as it was drawn.
+  const hatchRef = useRef<{ key: string; strokes: { pts: Pt[]; x: number }[] } | null>(null);
+  const shownRef = useRef(new Map<number, DrawingItem>());
+  const hatchFor = (ink: InkLayer) => {
+    const key = `${ink.w}x${ink.h}:${ink.seed}`;
+    if (hatchRef.current?.key !== key) {
+      const strokes = S.hatch({ type: 'rect', x: 3, y: 3, w: Math.max(0, ink.w - 6), h: Math.max(0, ink.h - 6) }, { seed: ink.seed, gap: 4, angle: -1.1, inset: 0.5 })
+        .map((pts) => ({ pts, x: pts.reduce((a, p) => a + p[0], 0) / pts.length }));
+      hatchRef.current = { key, strokes };
+    }
+    return hatchRef.current.strokes;
+  };
+  const sync = (ink: InkLayer, value: number, animate: boolean, duration = 0) => {
+    const d = ink.layer('fill'), shown = shownRef.current;
+    const strokes = hatchFor(ink), edge = 3 + (ink.w - 6) * value;
+    const pen = { ...ink.pen, size: ink.pen.size * 0.8 };
+    const lift: DrawingItem[] = [];
+    for (const [i, item] of shown) if (strokes[i].x > edge) { lift.push(item); shown.delete(i); }
+    let added = 0;
+    strokes.forEach((s, i) => {
+      if (s.x > edge || shown.has(i)) return;
+      const item = d.add(s.pts, pen, { seed: ink.seed + i * 31 });
+      if (item) { shown.set(i, item); added++; }
+    });
+    // Taking strokes off: right to left, the last ones first.
+    if (lift.length) d.lift(lift.reverse(), 220);
+    if (!added) return;
+    return animate ? d.play({ speed: 1600, duration }) : d.instant();
+  };
   const { svgRef, ink, isDrawn } = useInkLayer(ref, {
     after, delay, duration, seedKey: 'progress',
     async draw(ink, { animate, duration }) {
+      // A full (re)draw starts the fill from scratch.
+      ink.layer('fill').clear();
+      shownRef.current.clear();
       const p = ink.paint('outline', S.rect(0, 0, ink.w, ink.h, { seed: ink.seed, wobble: ink.pen.wobble * 0.7, radius: 3, overshoot: 3 }), { animate, duration: duration * 0.55 });
       if (animate) await p;
-      return fill(ink, animate, duration * 0.45);
+      return sync(ink, v, animate, duration * 0.45);
     },
   });
-  useEffect(() => { const i = ink(); if (i && isDrawn()) fill(i, true); }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const i = ink(); if (i && isDrawn()) sync(i, v, true); }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div ref={ref} role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v * 100)} className={cx('ink-progress ink-host', className)} style={{ height: 26, ...style }} {...rest}>
       <svg ref={svgRef} className="ink-layer" aria-hidden="true" />
