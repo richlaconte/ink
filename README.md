@@ -58,7 +58,7 @@ All components accept their native element's props, plus these ordering props:
 |---|---|
 | `<InkButton variant="outline \| solid \| accent \| ghost">` | Line boil on hover (`boil={false}` to disable); hand-drawn focus loop for keyboard focus. Solid and accent use a marker fill, so label contrast stays solid. |
 | `<InkCard as sketch="loop \| sketch" shadow="hatch \| none">` | Outline plus hatched shadow. Content inside `<Write>` appears with the card. |
-| `<Handwriting as hand nib size weight speed jitter slant wrap>` | Text written stroke by stroke. Changing the text writes the difference, and removed letters lift off. The real text stays in the DOM for screen readers and copy/paste. |
+| `<Handwriting as hand nib size weight speed jitter slant wrap>` | Text written stroke by stroke. Changing the text writes the difference, and removed letters lift off. The real text sits under the ink, transparent and spaced to match it, so it can be drag-selected, copied and found with find-in-page, and screen readers and search engines read it as ordinary text. |
 | `<Write as after>` | Writes ordinary (web font) text in, word by word. Inside an ink component it appears with that component's ink. |
 | `<InkInput>`, `<InkTextarea>` | The typed text is drawn in ink. The native field does all the editing (caret, selection, IME, undo, autofill): it's set in an invisible *metrics font* whose advance widths match the ink exactly, so the caret and selection line up. Props: `label`, `boxed`, `write={false}`, `hand`. Password, number and date inputs stay native. Works controlled or uncontrolled. |
 | `<InkCheckbox accent>`, `<InkRadio>`, `<InkSwitch>` | Native inputs (visually hidden, still focusable). |
@@ -148,6 +148,8 @@ Dark mode follows the system; set `data-ink-theme="light" | "dark"` on `<html>` 
 - Keyboard focus is shown with a hand-drawn loop; tabs support arrow keys.
 
 ## Performance notes
+
+On a page that is mostly `<Handwriting>`, set `::selection { background: transparent; }` on the page (the handwriting's own text keeps its highlighter colour). Otherwise Safari fills the space between selected blocks with its default blue.
 
 The SVG ink filter is re-rasterised while strokes animate. It's fine for dozens of elements on screen; for very busy pages use `.ink-no-filter` on parts of the page. Body copy should stay a real web font (use `<Write>`); keep `<Handwriting>` for headings, labels and short notes.
 

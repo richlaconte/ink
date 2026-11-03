@@ -73,6 +73,20 @@ export function measure(text: string, hand: InkHand, size: number): number {
   return [...text].reduce((a, c) => a + (advance(hand, c) * size) / hand.upm, 0);
 }
 
+/**
+ * The text split into runs (a word plus the spaces after it, or a lone "\n") with the width
+ * each takes in the ink. Joined, the runs are the original text. Used to lay real, selectable
+ * text over the ink so a drag selection lines up with what's written.
+ */
+export function textRuns(text: string, hand: InkHand, size: number): { text: string; width: number }[] {
+  const runs: { text: string; width: number }[] = [];
+  for (const part of text.split(/(\n)/)) {
+    if (part === '\n') { runs.push({ text: part, width: 0 }); continue; }
+    for (const m of part.matchAll(/ +|[^ ]+ */g)) runs.push({ text: m[0], width: measure(m[0], hand, size) });
+  }
+  return runs;
+}
+
 const glyphCache = new Map<string, Pt[][]>();
 function glyphSamples(hand: InkHand, ch: string): Pt[][] {
   const key = hand.key + '|' + ch;
