@@ -28,6 +28,19 @@ describe('semantics are preserved', () => {
     render(<Handwriting as="h1">Field notes</Handwriting>);
     expect(screen.getByRole('heading', { name: 'Field notes' })).toBeTruthy();
   });
+
+  it('handwriting text is real, selectable text in one place (not duplicated, not hidden from AT)', async () => {
+    render(<InkProvider><Handwriting as="p">{'Hello  there\n  indented'}</Handwriting></InkProvider>);
+    const p = document.querySelector('p.ink-handwriting')!;
+    const text = p.querySelector('.ink-handwriting-text')!;
+    expect(text.textContent).toBe('Hello  there\n  indented');
+    expect(text.closest('[aria-hidden]')).toBeNull();
+    expect(p.querySelector('.ink-handwriting-ink')!.getAttribute('aria-hidden')).toBe('true');
+    // Once the hand loads, the text is split into letter-spaced runs; the words are unchanged.
+    await waitFor(() => expect(text.hasAttribute('data-fit')).toBe(true));
+    expect(text.textContent).toBe('Hello  there\n  indented');
+    expect(p.textContent).toBe('Hello  there\n  indented');
+  });
 });
 
 describe('form controls', () => {

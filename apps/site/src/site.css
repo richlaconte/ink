@@ -6,6 +6,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
  * nudge the page sideways. clip (not hidden) so no scroll container is created. */
 html, body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+/* Text is handwritten: the selectable text lies under the ink and highlights itself (see
+ * .ink-handwriting-text in styles.css). Clear the default highlight elsewhere, or Safari fills
+ * the gaps between selected blocks with a solid blue sheet. Typed text keeps a highlight. */
+::selection { background: transparent; }
+:is(input, textarea)::selection { background: color-mix(in srgb, var(--ink-highlighter) 55%, transparent); }
 
 .skip { position: absolute; left: -9999px; top: 8px; padding: 8px 12px; background: var(--ink-paper); z-index: 10; }
 .skip:focus { left: 16px; }

@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, type ElementType, type HTMLAttributes, type RefObject } from 'react';
-import { InkText, type After, type NibKind } from '@pen-ink/core';
+import { useEffect, useLayoutEffect, useRef, useState, type ElementType, type HTMLAttributes, type RefObject } from 'react';
+import { InkText, textRuns, type After, type NibKind } from '@pen-ink/core';
 import { useInk } from '../context';
 
 const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
@@ -29,24 +29,58 @@ export interface HandwritingProps extends Omit<HTMLAttributes<HTMLElement>, 'chi
   duration?: number;
 }
 
+/** How the real text is laid over the ink: font, line pitch, and runs letter-spaced to the ink's widths. */
+interface TextFit { text: string; font: string; size: number; lineHeight: number; pad: number; width: number | null; runs: { text: string; spacing: number }[] }
+
+let canvas: CanvasRenderingContext2D | null | undefined;
+function naturalWidth(text: string, font: string): number | null {
+  if (canvas === undefined) {
+    try { canvas = document.createElement('canvas').getContext('2d'); } catch { canvas = null; }
+  }
+  if (!canvas) return null;
+  canvas.font = font;
+  if ('fontKerning' in canvas) canvas.fontKerning = 'none';
+  return canvas.measureText(text).width;
+}
+
+function fitText(text: string, w: InkText, family: string): TextFit | null {
+  const hand = w.hand;
+  if (!hand) return null;
+  const { size, lineHeight, pad, width } = w.o;
+  const font = `${size}px ${family}`;
+  const runs: TextFit['runs'] = [];
+  for (const r of textRuns(text, hand, size)) {
+    const n = [...r.text].length;
+    const nat = r.text === '\n' ? null : naturalWidth(r.text, font);
+    runs.push({ text: r.text, spacing: nat == null || !n ? 0 : (r.width - nat) / n });
+  }
+  return { text, font: family, size, lineHeight: size * lineHeight, pad, width: Number.isFinite(width) ? width : null, runs };
+}
+
 /**
- * Text handwritten stroke by stroke from a single-line font. The real text stays
- * in the DOM for screen readers, search and copy/paste; the ink is aria-hidden.
+ * Text handwritten stroke by stroke from a single-line font. The ink is an aria-hidden SVG;
+ * the real text sits underneath it, transparent and spaced to match the ink, so screen readers,
+ * search engines, find-in-page and drag-to-select/copy all work on the actual words.
  */
 export function Handwriting({ children: text, as: Tag = 'span', hand, size, nib = 'fine', weight = 0.06, speed = 1, jitter = 1, slant = 0, wrap = true, seed = 1, after, delay, duration, className, ...rest }: HandwritingProps) {
   const { stage, loadHand, defaultHand } = useInk();
-  const ref = useRef<HTMLElement>(null), holderRef = useRef<HTMLSpanElement>(null);
+  const ref = useRef<HTMLElement>(null), holderRef = useRef<HTMLSpanElement>(null), textElRef = useRef<HTMLSpanElement>(null);
   const writerRef = useRef<InkText | null>(null);
   const drawn = useRef(false);
   const textRef = useRef(text);
   textRef.current = text;
+  const [fit, setFit] = useState<TextFit | null>(null);
+  const [gen, setGen] = useState(0); // bumps when a new writer is made
+  // Until the text has been re-spaced, show it plain (never stale runs of older text).
+  const laid = fit && fit.text === text ? fit : null;
 
   useIsoLayoutEffect(() => {
     const el = ref.current!, holder = holderRef.current!;
-    const px = size ?? parseFloat(getComputedStyle(el).fontSize) * 1.15;
+    const px = size ?? (parseFloat(getComputedStyle(el).fontSize) || 16) * 1.15;
     const width = wrap ? (el.clientWidth || el.parentElement?.clientWidth || 600) - 4 : Infinity;
     const w = new InkText(holder, loadHand(hand ?? defaultHand), { size: px, width, weight, speed, jitter, slant, seed, pad: 2, pen: { nib } });
     writerRef.current = w;
+    setGen((g) => g + 1);
     w.reserve(text); // reserve space so layout doesn't jump
     const a = after && typeof after === 'object' && 'current' in after ? after.current : (after as After);
     const handle = stage.register({
@@ -59,10 +93,51 @@ export function Handwriting({ children: text, as: Tag = 'span', hand, size, nib 
   // After it's drawn, text changes are written as a diff.
   useEffect(() => { if (drawn.current) writerRef.current?.setText(text); }, [text]);
 
+  // Space the real text to the ink once the hand has loaded (and whenever the text changes).
+  useEffect(() => {
+    const w = writerRef.current, el = ref.current;
+    if (!w || !el) return;
+    let live = true;
+    w.ready.then(() => { if (live && writerRef.current === w) setFit(fitText(text, w, getComputedStyle(el).fontFamily || 'sans-serif')); }, () => {}); // no hand: plain text stays
+    return () => { live = false; };
+  }, [text, gen]);
+
+  // Lay the text over the ink: same height, pulled up over it, and scaled with it if CSS
+  // shrinks the SVG (.ink-text-svg has max-width: 100%).
+  useIsoLayoutEffect(() => {
+    const holder = holderRef.current, t = textElRef.current;
+    if (!holder || !t) return;
+    if (!laid) { t.style.height = t.style.marginTop = t.style.transform = ''; return; }
+    const place = () => {
+      const svg = holder.querySelector('svg'), w = writerRef.current;
+      const k = svg && w?.box.w ? svg.getBoundingClientRect().width / w.box.w || 1 : 1;
+      const h = holder.offsetHeight;
+      t.style.height = `${h}px`;
+      t.style.marginTop = `${-h}px`;
+      t.style.transform = Math.abs(k - 1) < 0.002 ? '' : `scale(${k.toFixed(4)})`;
+    };
+    place();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(place);
+    ro.observe(holder);
+    return () => ro.disconnect();
+  }, [laid]);
+
   return (
     <Tag ref={ref} className={cx('ink-handwriting', className)} {...rest}>
-      <span className="ink-sr">{text}</span>
-      <span ref={holderRef} aria-hidden="true" style={{ display: 'block', lineHeight: 0 }} />
+      <span ref={holderRef} className="ink-handwriting-ink" aria-hidden="true" style={{ display: 'block', lineHeight: 0 }} />
+      <span
+        ref={textElRef}
+        className="ink-handwriting-text"
+        data-fit={laid ? '' : undefined}
+        style={laid ? {
+          fontFamily: laid.font, fontSize: laid.size, lineHeight: `${laid.lineHeight}px`, padding: laid.pad,
+          width: laid.width == null ? undefined : laid.width + laid.pad * 2 + 0.5,
+          whiteSpace: laid.width == null ? 'pre' : 'pre-wrap',
+        } : undefined}
+      >
+        {laid ? laid.runs.map((r, i) => r.text === '\n' || !r.spacing ? r.text : <span key={i} style={{ letterSpacing: `${r.spacing.toFixed(3)}px` }}>{r.text}</span>) : text}
+      </span>
     </Tag>
   );
 }
