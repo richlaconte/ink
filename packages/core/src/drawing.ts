@@ -18,6 +18,11 @@ export interface InkSettings {
   revealDuration: number;
   /** Draw instantly. Defaults to the user's prefers-reduced-motion setting. */
   reducedMotion: boolean;
+  /**
+   * Hold the ink filter back while ink is moving and apply it once the ink has dried (default true).
+   * The filter is expensive to re-run every frame, especially in WebKit (every browser on iOS).
+   */
+  settleFilter: boolean;
 }
 
 const hasWindow = typeof window !== 'undefined';
@@ -27,7 +32,12 @@ export const settings: InkSettings = {
   loadDuration: 1400,
   revealDuration: 900,
   reducedMotion: hasWindow && typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+  settleFilter: true,
 };
+
+/** Fresh strokes stay wet this long (ms), then dry over DRY_FADE (keep in step with `.ink-stroke`'s fill transition). */
+export const DRY_DELAY = 450;
+export const DRY_FADE = 900;
 
 /** Minimum-jerk profile: how real hand movements accelerate and decelerate. */
 export const minJerk = (t: number) => t * t * t * (10 - 15 * t + 6 * t * t);
@@ -45,6 +55,43 @@ export function schedule(fn: Job): () => void {
   jobs.add(fn);
   if (!rafId) rafId = requestAnimationFrame(tick);
   return () => { jobs.delete(fn); };
+}
+
+/* ---------- Settling ----------
+ * The ink filter (url(#ink): turbulence, displacement, blur) is the costliest thing on the page.
+ * Browsers re-run it over the whole <svg> whenever anything inside changes, so a stroke growing
+ * frame by frame, or a fill transitioning from wet to dry, re-filters every frame. WebKit does this
+ * on the CPU, at device resolution, which makes animated ink crawl on iPhones. Still ink is cached.
+ *
+ * So while a drawing plays, fades or dries, its <svg> carries .ink-moving, which turns the filter
+ * off: fresh ink goes down crisp, then takes on the paper's texture as it dries. Each <svg> settles
+ * on its own frame, so a batch finishing together doesn't filter everything in a single frame. */
+const holds = new Map<Element, number>();
+const settling = new Set<Element>();
+let settleCancel: (() => void) | null = null;
+
+function hold(svg: Element | null) {
+  if (!svg || !settings.settleFilter) return null;
+  holds.set(svg, (holds.get(svg) || 0) + 1);
+  settling.delete(svg);
+  svg.classList.add('ink-moving');
+  return svg;
+}
+
+function release(svg: Element | null, after: number) {
+  if (!svg) return;
+  setTimeout(() => {
+    const n = (holds.get(svg) || 1) - 1;
+    if (n > 0) { holds.set(svg, n); return; }
+    holds.delete(svg);
+    settling.add(svg);
+    settleCancel ||= schedule(() => {
+      const next = settling.values().next();
+      if (next.done) { settleCancel = null; return false; }
+      settling.delete(next.value);
+      next.value.classList.remove('ink-moving');
+    });
+  }, after);
 }
 
 export function createSvg(className = 'ink-svg'): SVGSVGElement {
@@ -138,7 +185,11 @@ export class Drawing {
       total = duration;
     }
 
-    return new Promise((resolve) => {
+    const svg = hold(this.g.ownerSVGElement);
+    return new Promise<void>((done) => {
+      // Finished or stopped: let the last strokes dry before the filter comes back.
+      let settled = false;
+      const resolve = () => { if (!settled) { settled = true; release(svg, wet ? DRY_DELAY + DRY_FADE : 0); } done(); };
       let t0: number | null = null, idx = 0;
       this.resolvePlay = resolve;
       this.cancel = schedule((now) => {
@@ -153,7 +204,7 @@ export class Drawing {
           if (f < 1) break;
           it.done = true;
           const node = it.el;
-          setTimeout(() => node.classList.remove('wet'), 450); // let the wet ink dry
+          setTimeout(() => node.classList.remove('wet'), DRY_DELAY); // let the wet ink dry
           idx++;
         }
         onProgress?.(Math.min(1, el / total));
@@ -180,10 +231,10 @@ export class Drawing {
   /** Lift the ink off (fade out), then clear. */
   fade(ms = 260): Promise<void> {
     this.stop();
-    const g = this.g;
+    const g = this.g, svg = hold(g.ownerSVGElement);
     g.style.transition = `opacity ${ms}ms ease`;
     g.style.opacity = '0';
-    return new Promise((res) => setTimeout(() => { this.clear(); g.style.opacity = ''; g.style.transition = ''; res(); }, ms));
+    return new Promise((res) => setTimeout(() => { this.clear(); g.style.opacity = ''; g.style.transition = ''; release(svg, 0); res(); }, ms));
   }
 
   /**
@@ -195,8 +246,9 @@ export class Drawing {
     const gone = new Set(items);
     this.items = this.items.filter((it) => !gone.has(it));
     if (ms <= 0 || settings.reducedMotion) { items.forEach((it) => it.el.remove()); return Promise.resolve(); }
+    const svg = hold(this.g.ownerSVGElement);
     for (const it of items) { it.el.style.transition = `opacity ${ms}ms ease`; it.el.style.opacity = '0'; }
-    return new Promise((res) => setTimeout(() => { items.forEach((it) => it.el.remove()); res(); }, ms));
+    return new Promise((res) => setTimeout(() => { items.forEach((it) => it.el.remove()); release(svg, 0); res(); }, ms));
   }
 
   remove() { this.stop(); this.g.remove(); }
