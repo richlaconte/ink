@@ -78,8 +78,11 @@ All components accept their native element's props, plus these ordering props:
   speed={1}                // global speed multiplier
   hand="casual"            // default hand
   filter={{ rough: 1.1, bleed: 0.45, grain: 0.35 }}
+  settleFilter={true}      // apply the ink filter once ink has dried, not while it moves
 >
 ```
+
+The ink filter (ragged edges, bleed, grain) is expensive to re-run every frame, especially in Safari and every other browser on iOS. By default, ink that is still being drawn or drying is shown unfiltered, and the filter is applied once it settles: fresh ink goes down crisp and blue-black, then dries into the paper's texture. Set `settleFilter={false}` to filter ink while it moves too.
 
 Components also work without a provider, using defaults.
 

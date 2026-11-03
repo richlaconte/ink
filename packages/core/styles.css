@@ -31,9 +31,19 @@
 
 /* Paper: put on <body> (or any surface). */
 .ink-paper { background-color: var(--ink-paper); background-image: var(--ink-paper-grain), var(--ink-paper-fibre); color: var(--ink-color); }
+/* On <body>, the texture sits on its own fixed, composited layer instead of the page background.
+   Otherwise every repaint of the ink above it repaints the noise too, which makes scrolling janky
+   (WebKit especially). The texture stays put while the page scrolls; it's noise, so it reads the same. */
+body.ink-paper { background-image: none; }
+body.ink-paper::before {
+  content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100lvh;
+  z-index: -1; pointer-events: none; transform: translateZ(0);
+  background-image: var(--ink-paper-grain), var(--ink-paper-fibre);
+}
 
 /* ---------- strokes ---------- */
-.ink-stroke { fill: var(--ink-color); transition: fill 1.6s ease-out; }
+/* Wet ink dries over 0.9s (DRY_FADE in drawing.ts). */
+.ink-stroke { fill: var(--ink-color); transition: fill 0.9s ease-out; }
 .ink-stroke.wet { fill: var(--ink-wet); transition: none; }
 .ink-accent .ink-stroke, .ink-stroke.ink-accent { fill: var(--ink-accent); }
 .ink-accent .ink-stroke.wet, .ink-stroke.ink-accent.wet { fill: var(--ink-accent-wet); }
@@ -46,6 +56,8 @@
 /* The ink filter. Turn it off per subtree with .ink-no-filter. */
 .ink-svg, .ink-layer, .ink-text-svg { filter: url(#ink); }
 .ink-no-filter .ink-svg, .ink-no-filter .ink-layer, .ink-no-filter .ink-text-svg { filter: none; }
+/* Ink that is still moving or drying is drawn unfiltered; the filter is applied once it settles (see drawing.ts). */
+.ink-svg.ink-moving, .ink-layer.ink-moving, .ink-text-svg.ink-moving { filter: none; }
 
 /* ---------- hosts: an element with an ink layer behind its content ---------- */
 .ink-host { position: relative; isolation: isolate; }
