@@ -30,7 +30,7 @@ export interface HandwritingProps extends Omit<HTMLAttributes<HTMLElement>, 'chi
 }
 
 /** How the real text is laid over the ink: font, line pitch, and runs letter-spaced to the ink's widths. */
-interface TextFit { font: string; size: number; lineHeight: number; pad: number; width: number | null; runs: { text: string; spacing: number }[] }
+interface TextFit { text: string; font: string; size: number; lineHeight: number; pad: number; width: number | null; runs: { text: string; spacing: number }[] }
 
 let canvas: CanvasRenderingContext2D | null | undefined;
 function naturalWidth(text: string, font: string): number | null {
@@ -54,7 +54,7 @@ function fitText(text: string, w: InkText, family: string): TextFit | null {
     const nat = r.text === '\n' ? null : naturalWidth(r.text, font);
     runs.push({ text: r.text, spacing: nat == null || !n ? 0 : (r.width - nat) / n });
   }
-  return { font: family, size, lineHeight: size * lineHeight, pad, width: Number.isFinite(width) ? width : null, runs };
+  return { text, font: family, size, lineHeight: size * lineHeight, pad, width: Number.isFinite(width) ? width : null, runs };
 }
 
 /**
@@ -71,6 +71,8 @@ export function Handwriting({ children: text, as: Tag = 'span', hand, size, nib 
   textRef.current = text;
   const [fit, setFit] = useState<TextFit | null>(null);
   const [gen, setGen] = useState(0); // bumps when a new writer is made
+  // Until the text has been re-spaced, show it plain (never stale runs of older text).
+  const laid = fit && fit.text === text ? fit : null;
 
   useIsoLayoutEffect(() => {
     const el = ref.current!, holder = holderRef.current!;
@@ -96,17 +98,22 @@ export function Handwriting({ children: text, as: Tag = 'span', hand, size, nib 
     const w = writerRef.current, el = ref.current;
     if (!w || !el) return;
     let live = true;
-    w.ready.then(() => { if (live && writerRef.current === w) setFit(fitText(text, w, getComputedStyle(el).fontFamily || 'sans-serif')); });
+    w.ready.then(() => { if (live && writerRef.current === w) setFit(fitText(text, w, getComputedStyle(el).fontFamily || 'sans-serif')); }, () => {}); // no hand: plain text stays
     return () => { live = false; };
   }, [text, gen]);
 
-  // Follow the ink if CSS scales its SVG down (.ink-text-svg has max-width: 100%).
+  // Lay the text over the ink: same height, pulled up over it, and scaled with it if CSS
+  // shrinks the SVG (.ink-text-svg has max-width: 100%).
   useIsoLayoutEffect(() => {
     const holder = holderRef.current, t = textElRef.current;
-    if (!holder || !t || !fit) return;
+    if (!holder || !t) return;
+    if (!laid) { t.style.height = t.style.marginTop = t.style.transform = ''; return; }
     const place = () => {
       const svg = holder.querySelector('svg'), w = writerRef.current;
       const k = svg && w?.box.w ? svg.getBoundingClientRect().width / w.box.w || 1 : 1;
+      const h = holder.offsetHeight;
+      t.style.height = `${h}px`;
+      t.style.marginTop = `${-h}px`;
       t.style.transform = Math.abs(k - 1) < 0.002 ? '' : `scale(${k.toFixed(4)})`;
     };
     place();
@@ -114,23 +121,23 @@ export function Handwriting({ children: text, as: Tag = 'span', hand, size, nib 
     const ro = new ResizeObserver(place);
     ro.observe(holder);
     return () => ro.disconnect();
-  }, [fit]);
+  }, [laid]);
 
   return (
     <Tag ref={ref} className={cx('ink-handwriting', className)} {...rest}>
+      <span ref={holderRef} className="ink-handwriting-ink" aria-hidden="true" style={{ display: 'block', lineHeight: 0 }} />
       <span
         ref={textElRef}
         className="ink-handwriting-text"
-        data-fit={fit ? '' : undefined}
-        style={fit ? {
-          fontFamily: fit.font, fontSize: fit.size, lineHeight: `${fit.lineHeight}px`, padding: `${fit.pad}px ${fit.pad}px 0`, marginBottom: -fit.pad,
-          width: fit.width == null ? undefined : fit.width + fit.pad * 2 + 0.5,
-          whiteSpace: fit.width == null ? 'pre' : 'pre-wrap',
+        data-fit={laid ? '' : undefined}
+        style={laid ? {
+          fontFamily: laid.font, fontSize: laid.size, lineHeight: `${laid.lineHeight}px`, padding: laid.pad,
+          width: laid.width == null ? undefined : laid.width + laid.pad * 2 + 0.5,
+          whiteSpace: laid.width == null ? 'pre' : 'pre-wrap',
         } : undefined}
       >
-        {fit ? fit.runs.map((r, i) => r.text === '\n' || !r.spacing ? r.text : <span key={i} style={{ letterSpacing: `${r.spacing.toFixed(3)}px` }}>{r.text}</span>) : text}
+        {laid ? laid.runs.map((r, i) => r.text === '\n' || !r.spacing ? r.text : <span key={i} style={{ letterSpacing: `${r.spacing.toFixed(3)}px` }}>{r.text}</span>) : text}
       </span>
-      <span ref={holderRef} className="ink-handwriting-ink" aria-hidden="true" style={{ display: 'block', lineHeight: 0 }} />
     </Tag>
   );
 }

@@ -69,15 +69,16 @@ body.ink-paper::before {
    selection, copy, find-in-page, screen readers and search all see the actual words. */
 .ink-handwriting { position: relative; isolation: isolate; }
 .ink-handwriting-ink { position: relative; z-index: 1; pointer-events: none; }
-/* In flow but zero-height, so its lines overflow over the ink below without taking space. Being in
-   flow lets a drag that starts in the margin beside the text find the nearest line, as it would for plain text. */
+/* After the ink in flow, as tall as it and pulled up over it (height and margin set from the ink's
+   size), so layout is unchanged. Being in flow lets a drag that starts in the margin beside the text
+   find the nearest line, as it would for plain text. */
 .ink-handwriting-text {
-  display: block; height: 0; overflow: visible; box-sizing: border-box; margin: 0; transform-origin: 0 0;
+  display: block; box-sizing: border-box; margin: 0; overflow: visible; transform-origin: 0 0;
   color: transparent; -webkit-text-fill-color: transparent; text-align: left; text-indent: 0; text-transform: none;
   word-spacing: normal; font-weight: 400; font-style: normal; font-kerning: none; font-variant-ligatures: none;
 }
 /* Before the hand has loaded the text isn't spaced yet: keep it out of the way. */
-.ink-handwriting-text:not([data-fit]) { overflow: hidden; white-space: nowrap; }
+.ink-handwriting-text:not([data-fit]) { height: 0; overflow: hidden; white-space: nowrap; }
 .ink-handwriting-text::selection, .ink-handwriting-text ::selection { background: color-mix(in srgb, var(--ink-highlighter) 55%, transparent); color: transparent; -webkit-text-fill-color: transparent; }
 
 /* Write-in: words revealed left to right. */
