@@ -94,6 +94,23 @@ function release(svg: Element | null, after: number) {
   }, after);
 }
 
+/**
+ * WebKit (every browser on iOS) works out the bounds of filtered SVG content slightly wrong and
+ * skips painting elements that hang off the edge, so a thin stroke like the bottom bar of an E
+ * can vanish ("OPEN" reads "OPFN"). An unpainted rect covering the whole SVG makes those bounds
+ * the full box. It is invisible and costs nothing to paint.
+ */
+function ensureBounds(svg: SVGSVGElement | null) {
+  if (!svg || svg.querySelector(':scope > .ink-bounds')) return;
+  const r = document.createElementNS(SVGNS, 'rect');
+  r.setAttribute('class', 'ink-bounds');
+  r.setAttribute('width', '100%');
+  r.setAttribute('height', '100%');
+  r.setAttribute('fill', 'none');
+  r.setAttribute('pointer-events', 'none');
+  svg.prepend(r);
+}
+
 export function createSvg(className = 'ink-svg'): SVGSVGElement {
   const svg = document.createElementNS(SVGNS, 'svg');
   svg.setAttribute('class', className);
@@ -128,6 +145,7 @@ export class Drawing {
     this.g = document.createElementNS(SVGNS, 'g');
     if (className) this.g.setAttribute('class', className);
     parent.append(this.g);
+    ensureBounds(this.g.ownerSVGElement);
   }
 
   /** Add a stroke; `pts` are in this drawing's coordinate space. */
